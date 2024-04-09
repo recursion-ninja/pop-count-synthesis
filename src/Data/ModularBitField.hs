@@ -21,7 +21,7 @@ module Data.ModularBitField
 
 import Abstract.Machine(Operation(..))
 import Abstract.Interpretation(Interpretation(..), getVariable)
-import Data.BitVector
+import Data.BitVector.Sized
 
 import Control.DeepSeq (NFData)
 import Data.Bits

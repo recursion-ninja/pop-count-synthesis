@@ -25,6 +25,7 @@ Little-endian bit vectors of dependantly-typed length which are isomorphic to a 
 module Data.BitVector.Sized (
     -- * Data-type
     BitVector (..),
+    KnownNat,
 
     -- * Construction
     fromBits,

@@ -5,10 +5,10 @@ module Synthesis.PopCount
 
 import Abstract.Machine
 import Data.Bits
-import Data.BitVector
+import Data.BitVector.Sized
 
 
-synthesizePopCount :: Word -> Algorithm BitVector
+synthesizePopCount :: KnownNat w => Word -> Algorithm (BitVector w)
 synthesizePopCount dimmension = undefined
 
 
