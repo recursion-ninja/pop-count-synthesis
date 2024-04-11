@@ -1,10 +1,13 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RoleAnnotations #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UnicodeSyntax #-}
@@ -19,8 +22,11 @@ Stability   : Stable
 Little-endian bit vectors of dependantly-typed length which are isomorphic to a @[Bool]@ with the /least/ significant bit at the head of the list and the /most/ significant bit at the end of the list. Consequently, the endianness of a bit vector affects the semantics of the following typeclasses:
 
   * Bits
+  * Enum
   * FiniteBits
+  * Integral
   * Num
+  * Real
 -}
 module Data.BitVector.Sized (
     -- * Data-type
@@ -56,6 +62,7 @@ import Data.Data
 import Data.Foldable hiding (toList)
 import Data.Foldable qualified as Fold
 import Data.Hashable
+import Data.List qualified as List
 import Data.Vector.Unboxed qualified as VU
 import Data.Vector.Unboxed.Sized (Vector)
 import Data.Vector.Unboxed.Sized qualified as VUS
@@ -102,6 +109,114 @@ deriving newtype instance Ord (BitVector w)
 
 -- | @since 0.1.0
 deriving newtype instance (KnownNat w) ⇒ Read (BitVector w)
+
+
+-- | @since 0.1.0
+instance (KnownNat w) ⇒ Bounded (BitVector w) where
+    minBound = constantBV False
+
+
+    maxBound = constantBV False
+
+
+-- | @since 0.1.0
+instance (KnownNat w) ⇒ Enum (BitVector w) where
+    succ ∷ BitVector w → BitVector w
+    succ bv = bv + fromNumber 1
+
+
+    pred ∷ BitVector w → BitVector w
+    pred bv = bv - fromNumber 1
+
+
+    toEnum ∷ Int → BitVector w
+    toEnum = fromNumber
+
+
+    fromEnum ∷ BitVector w → Int
+    fromEnum bv =
+        let modulus ∷ Natural
+            modulus = fromIntegral (maxBound ∷ Word)
+
+            wordVal ∷ Word
+            wordVal = fromIntegral $ naturalBV bv `mod` modulus
+
+            toInt ∷ Word → Int
+            toInt = unsafeCoerce
+        in  toInt wordVal
+
+
+    enumFrom ∷ BitVector w → [BitVector w]
+    enumFrom =
+        let gen ∷ BitVector w → Maybe (BitVector w, BitVector w)
+            gen !i =
+                let !j = succ i
+                    pair = (i, j)
+                in  pair `seq` Just pair
+        in  List.unfoldr gen
+
+
+    enumFromThen ∷ BitVector w → BitVector w → [BitVector w]
+    enumFromThen seed skip =
+        let gen !i =
+                let !j = i + skip
+                    pair = (i, j)
+                in  pair `seq` Just pair
+        in  List.unfoldr gen seed
+
+
+    enumFromTo ∷ BitVector w → BitVector w → [BitVector w]
+    enumFromTo seed stop =
+        let gen i
+                | i > stop = Nothing
+                | otherwise = Just (i, succ i)
+        in  List.unfoldr gen seed
+
+
+    enumFromThenTo ∷ BitVector w → BitVector w → BitVector w → [BitVector w]
+    enumFromThenTo seed skip stop =
+        let gen !i
+                | i > stop = Nothing
+                | otherwise =
+                    let !j = i + skip
+                        pair = (i, j)
+                    in  pair `seq` Just pair
+        in  List.unfoldr gen seed
+
+
+-- | @since 0.1.0
+instance (KnownNat w) ⇒ Real (BitVector w) where
+    toRational = toRational . naturalBV
+
+
+{-
+The quot, rem, div, and mod class methods satisfy these laws if y is non-zero:
+
+(x `quot` y)*y + (x `rem` y) == x
+(x `div`  y)*y + (x `mod` y) == x
+quot is integer division truncated toward zero, while the result of div is truncated toward negative infinity.
+-}
+
+-- | @since 0.1.0
+instance (KnownNat w) ⇒ Integral (BitVector w) where
+    quot = binaryOperationModulo quot
+    rem = binaryOperationModulo rem
+    div = binaryOperationModulo div
+    mod = binaryOperationModulo mod
+
+
+    quotRem ∷ BitVector w → BitVector w → (BitVector w, BitVector w)
+    quotRem dividend divisor =
+        let !q = binaryOperationModulo quot dividend divisor
+            !r = binaryOperationModulo rem dividend divisor
+            !p = (q, r)
+        in  p `seq` p
+
+
+    divMod = quotRem
+
+
+    toInteger = toInteger . naturalBV
 
 
 -- | @since 0.1.0
@@ -159,7 +274,8 @@ instance (KnownNat w) ⇒ Num (BitVector w) where
     signum = const zeroBits
 
 
-    fromInteger = undefined
+    {-# INLINE fromInteger #-}
+    fromInteger = fromNumber
 
 
     {-# INLINE negate #-}
@@ -254,7 +370,7 @@ fromBits input =
         valBits = align . VU.fromList . fmap toBit $ Fold.toList input
 
         valOnes ∷ VUS.Vector w Bit
-        valOnes = VUS.replicate' pxy $ Bit True
+        BV valOnes = constantBV True
     in  BV $ VUS.withVectorUnsafe (const valBits) valOnes
 
 
@@ -296,7 +412,7 @@ fromNumber input =
         valBits = VU.take base . VB.castFromWords $ padding valBytes
 
         valOnes ∷ VUS.Vector w Bit
-        valOnes = VUS.replicate' pxy $ Bit True
+        BV valOnes = constantBV True
     in  BV $ VUS.withVectorUnsafe (const valBits) valOnes
 
 
@@ -367,6 +483,16 @@ toWords ∷ ∀ t w. (IsList t, Item t ~ Word) ⇒ BitVector w → t
 toWords (BV v) = fromList . VU.toList $ getWords v
 
 
+constantBV ∷ ∀ w. (KnownNat w) ⇒ Bool → BitVector w
+constantBV bool =
+    let pxy ∷ Proxy w
+        pxy = Proxy
+
+        vec ∷ VUS.Vector w Bit
+        vec = VUS.replicate' pxy $ Bit bool
+    in  BV vec
+
+
 binaryOperationModulo
     ∷ ∀ w
      . (KnownNat w)
@@ -385,13 +511,13 @@ binaryOperationModulo op x (BV v) =
                 modulus ∷ Natural
                 modulus = 1 `shiftL` base
 
-                performOperation ∷ VU.Vector Bit → VU.Vector Bit
+                performOperation ∷ VUS.Vector w Bit → BitVector w
                 performOperation w =
-                    let n = naturalVU . VB.cloneToWords8 $ w
+                    let n = naturalVU . VB.cloneToWords8 $ VUS.fromSized w
                         naturalValue ∷ Natural
                         naturalValue = (m `op` n) `mod` modulus
-                    in  VU.take base . VB.castFromWords8 $ natBytes naturalValue
-            in  BV $ VUS.withVectorUnsafe performOperation v
+                    in  fromNumber naturalValue
+            in  performOperation v
     in  VUS.knownLength' v compute
 
 

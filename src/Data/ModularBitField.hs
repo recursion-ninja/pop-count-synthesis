@@ -56,7 +56,7 @@ deriving newtype  instance Ord a => Ord (ModularBitField a)
 deriving newtype  instance Semigroup (ModularBitField a)
 
 
-ofDimension :: (Integral v, Integral d) => v -> d -> ModularBitField BitVector
+ofDimension :: (Integral v, Integral d) => v -> d -> ModularBitField (BitVector w)
 ofDimension val dim =
     let dim' :: Word
         dim' = fromIntegral $ abs dim `mod` fromIntegral (maxBound :: Word)
