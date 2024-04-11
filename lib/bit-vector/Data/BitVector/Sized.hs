@@ -1,16 +1,9 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE RoleAnnotations #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UnicodeSyntax #-}
 
 {- |
 
@@ -29,11 +22,15 @@ Little-endian bit vectors of dependantly-typed length which are isomorphic to a 
   * Real
 -}
 module Data.BitVector.Sized (
-    -- * Data-type
+    -- * Data-types
     BitVector (..),
     KnownNat,
 
     -- * Construction
+
+    -- |
+    --     Create a 'BitVector' via the explicit functions 'fromBits' and 'fromNumber',
+    --     or via the type-class methods 'toEnum', 'fromInteger', 'maxBound', 'minBound', and 'zeroBits'.
     fromBits,
     fromNumber,
 
@@ -45,8 +42,6 @@ module Data.BitVector.Sized (
 
     -- * Queries
     dimension,
-
-    -- ** Conversions
 
     -- * Rendering
     renderBin,

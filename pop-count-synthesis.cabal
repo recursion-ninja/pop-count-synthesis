@@ -31,6 +31,16 @@ Extra-Doc-Files:
 
 Common build-configuration
 
+  default-extensions:
+    BangPatterns
+    DerivingStrategies
+    ImportQualifiedPost
+    LambdaCase
+    NoGeneralizedNewtypeDeriving
+    OverloadedStrings
+    RoleAnnotations
+    UnicodeSyntax
+       
   default-language:
     GHC2021
 

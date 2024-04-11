@@ -1,35 +1,20 @@
-{-# Language DeriveAnyClass #-}
-{-# Language DeriveDataTypeable #-}
-{-# Language DeriveGeneric #-}
-{-# Language DerivingStrategies #-}
-{-# Language DerivingVia #-}
-{-# Language GADTs #-}
-{-# Language LambdaCase #-}
-{-# Language OverloadedStrings #-}
-{-# Language QuantifiedConstraints #-}
-{-# Language TypeFamilies #-}
-{-# Language UndecidableInstances #-}
+module Abstract.Machine (
+    Algorithm (),
+    Operation (..),
+    assignment,
+    easyCode,
+) where
+
+import Abstract.Machine.Algorithm (Algorithm (), assignment)
+import Abstract.Machine.Operation (Operation (..))
 
 
-module Abstract.Machine
-    ( Algorithm()
-    , Operation(..)
-    , assignment
-    , easyCode
-    ) where
-
-
-import Abstract.Machine.Algorithm (Algorithm(), assignment)
-import Abstract.Machine.Operation (Operation(..))
-
-
-easyCode :: Algorithm a
+easyCode ∷ Algorithm a
 easyCode = assignment 1 $ SFTL (ADD (LIT 42) (VAR 0)) (LIT 1)
-
 
 {-
 prettyPrinter :: (Integral i, IsString s, Semigroup s) => Interpretation i s
-prettyPrinter = Interpretation $ \_ -> 
+prettyPrinter = Interpretation $ \_ ->
     let renderAll :: (Integral i, IsString s, Semigroup s) => Operation i -> s
         renderAll = \case
               ADD  x y -> renderBin "+" x y
@@ -80,7 +65,6 @@ Binary Operators: BV -> BV -> BV
 (.|.) Bitwise OR
 -}
 
-
 {-
 
 Unary Operatiors: BV -> BV
@@ -88,7 +72,6 @@ Unary Operatiors: BV -> BV
 complement Bitwise NEG
 
 -}
-
 
 {-
 
